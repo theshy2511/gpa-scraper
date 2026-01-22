@@ -9,7 +9,8 @@ from webdriver_manager.chrome import ChromeDriverManager
 
 # Đảm bảo các file này đã có trên GitHub
 from helpers import extract_gpa, check_semester_exists 
-from config import * def main():
+from config import * 
+def main():
     options = Options()
     options.add_argument("--headless") 
     options.add_argument("--no-sandbox")
