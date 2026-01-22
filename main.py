@@ -1,6 +1,7 @@
 import os
 import time
 import openpyxl
+import random
 from bs4 import BeautifulSoup
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service
@@ -9,64 +10,69 @@ from webdriver_manager.chrome import ChromeDriverManager
 from helpers import extract_gpa, check_semester_exists
 
 def main():
-    # Cấu hình trình duyệt chạy ngầm (Headless)
+    # 1. Cấu hình trình duyệt
     chrome_options = Options()
     chrome_options.add_argument("--headless")
     chrome_options.add_argument("--no-sandbox")
     chrome_options.add_argument("--disable-dev-shm-usage")
     
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
-    # Giới hạn thời gian chờ load trang là 20 giây để tránh treo
-    driver.set_page_load_timeout(20)
+    driver.set_page_load_timeout(30) # Chống đơ khi web lag
     
     excel_path = "Data_14DH.xlsx"
+    BATCH_LIMIT = 100  # Giới hạn 100 người mỗi lần chạy
+    processed_count = 0
     
     try:
         wb = openpyxl.load_workbook(excel_path)
         ws = wb["14DHTH"]
         
         for row_idx, row in enumerate(ws.iter_rows(min_row=2), start=2):
-            # Cột H là index 7, Cột E là index 4
-            status_hien_tai = row[7].value 
-            url_xem_diem = row[4].value
+            # Nếu đã quét đủ 100 người mới trong đợt này thì dừng
+            if processed_count >= BATCH_LIMIT:
+                print(f"🎯 Đã hoàn thành hạn mức {BATCH_LIMIT} người của đợt này.")
+                break
+                
+            status_hien_tai = row[7].value # Cột H
+            url_xem_diem = row[4].value    # Cột E
 
-            # 1. Nếu đã có trạng thái thì bỏ qua
+            # logic: Trống trạng thái mới quét
             if status_hien_tai and str(status_hien_tai).strip():
-                print(f"⏩ Dòng {row_idx}: Đã có dữ liệu, bỏ qua.")
                 continue
 
             if not url_xem_diem:
                 continue
 
-            # 2. Truy cập web với xử lý lỗi timeout
             try:
-                print(f"🔍 Đang quét dòng {row_idx}...")
+                print(f"🔍 [{processed_count + 1}/{BATCH_LIMIT}] Đang quét dòng {row_idx}...")
                 driver.get(str(url_xem_diem).strip())
-                time.sleep(2) # Chờ render nhẹ
+                
+                # Nghỉ ngẫu nhiên để tránh bị chặn IP
+                time.sleep(random.uniform(2, 4)) 
                 
                 soup = BeautifulSoup(driver.page_source, "html.parser")
-                
-                # 3. Lấy GPA và xét học kỳ
                 gpa = extract_gpa(soup)
-                con_hoc = check_semester_exists(soup, "HK2 (2025 - 2026)")
-                status_moi = "còn học" if con_hoc else "nghỉ học"
                 
-                # 4. Ghi vào file (Cột G và H)
+                # Kiểm tra học kỳ đúng ý bạn
+                is_active = check_semester_exists(soup, "HK2 (2025 - 2026)")
+                status_moi = "còn học" if is_active else "nghỉ học"
+                
+                # Ghi dữ liệu
                 ws.cell(row=row_idx, column=7, value=gpa)
                 ws.cell(row=row_idx, column=8, value=status_moi)
                 
-                # Lưu ngay lập tức sau mỗi dòng
+                processed_count += 1
+                
+                # Lưu sau mỗi dòng để đảm bảo an toàn dữ liệu
                 wb.save(excel_path)
-                print(f"✅ Xong dòng {row_idx}: {gpa} | {status_moi}")
+                print(f"✅ Xong: {gpa} | {status_moi}")
 
             except Exception as e:
-                print(f"⚠️ Lỗi tại dòng {row_idx} (Có thể do web lag): {e}")
-                continue # Lỗi người này thì làm tiếp người sau
+                print(f"⚠️ Lỗi dòng {row_idx}: {e}")
+                continue
 
-        print("🎉 Đã hoàn thành toàn bộ danh sách!")
+        print(f"🏁 Đợt chạy kết thúc. Tổng cộng đã quét thêm {processed_count} sinh viên.")
 
-    except Exception as e:
-        print(f"❌ Lỗi hệ thống: {e}")
     finally:
         driver.quit()
 
