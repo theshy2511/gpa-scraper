@@ -1,6 +1,5 @@
 import os
 import time
-import logging
 import openpyxl
 from bs4 import BeautifulSoup
 from selenium import webdriver
@@ -8,19 +7,15 @@ from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
 
-# Giả sử bạn để các hàm này trong file helpers.py
+# Đảm bảo các file này đã có trên GitHub
 from helpers import extract_gpa, check_semester_exists 
-# Và các biến trong config.py
 from config import * def main():
     options = Options()
-    options.add_argument("--headless") # Chạy ngầm không mở cửa sổ
+    options.add_argument("--headless") 
     options.add_argument("--no-sandbox")
     options.add_argument("--disable-dev-shm-usage")
     
-    # Tự động tải Driver phù hợp với server GitHub
     driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=options)
-    
-    # Đường dẫn file trên GitHub (dùng đường dẫn tương đối)
     excel_path = "Data_14DH.xlsx"
     
     try:
@@ -32,20 +27,20 @@ from config import * def main():
             if not url_xem_diem: continue
             
             driver.get(str(url_xem_diem).strip())
-            time.sleep(2) # Đợi load trang
+            time.sleep(2) 
             
             soup = BeautifulSoup(driver.page_source, "html.parser")
             gpa = extract_gpa(soup)
             status = "còn học" if check_semester_exists(soup, "HK2 (2025 - 2026)") else "nghỉ học"
             
-            # Ghi vào cột G và H
             ws.cell(row=row_idx, column=7, value=gpa)
             ws.cell(row=row_idx, column=8, value=status)
             
-            # Chỉ chạy thử 2 người nếu muốn test nhanh
+            # XÓA dòng này nếu muốn chạy hết cả lớp, hiện tại chỉ test 2 người
             if row_idx > 3: break 
 
         wb.save(excel_path)
+        print("💾 Đã lưu dữ liệu vào Excel thành công.")
     finally:
         driver.quit()
 
