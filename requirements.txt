@@ -1,6 +1,4 @@
-beautifulsoup4
-openpyxl
-pandas
-requests
 selenium
 webdriver-manager
+openpyxl
+beautifulsoup4
