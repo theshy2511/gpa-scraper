@@ -3,39 +3,32 @@ from bs4 import BeautifulSoup
 
 def extract_gpa(soup):
     try:
-        # Lấy văn bản, giữ nguyên các khoảng trắng để phân tách số
+        # Lấy văn bản từ trang web
         text = soup.get_text(separator=' ', strip=True)
         
-        # 1. Tìm khu vực chứa cụm từ bạn chỉ định
-        # Sử dụng Regex để tìm tất cả các số thập phân đứng sau cụm từ đó
-        # Chúng ta tìm trong phạm vi 50 ký tự sau cụm từ để tránh lấy nhầm số ở xa
-        pattern = r"Trung bình chung tích luỹ.*?(\d+\.\d{1,2}|\d+)"
-        matches = re.findall(pattern, text)
-        
-        if matches:
-            # Chuyển danh sách tìm được sang số thực
-            scores = []
-            for m in matches:
-                try:
-                    scores.append(float(m))
-                except: continue
+        # Tìm khu vực có chữ "Trung bình chung tích luỹ"
+        if "Trung bình chung tích luỹ" in text:
+            start_idx = text.find("Trung bình chung tích luỹ")
+            # Cắt lấy đoạn văn bản ngắn ngay sau đó để tìm điểm
+            sub_text = text[start_idx : start_idx + 150]
             
-            # 2. Lọc lấy điểm hệ 4 (thường <= 4.0)
-            # Nếu có nhiều số, ta lấy số nào <= 4.0
-            gpa_4 = [s for s in scores if s <= 4.0]
+            # Tìm tất cả các số thập phân (ví dụ: 7.00, 3.22)
+            numbers = re.findall(r"\d+\.\d+", sub_text)
             
-            if gpa_4:
-                # Trả về số đầu tiên tìm thấy và ép định dạng 2 chữ số thập phân (VD: 3.20)
-                return "{:.2f}".format(gpa_4[0])
-            else:
-                # Nếu không có số nào <= 4, có thể trang web chỉ hiện hệ 10
-                # Ta lấy số đầu tiên và thử quy đổi hoặc giữ nguyên để bạn kiểm tra
-                return "{:.2f}".format(scores[0]) if scores else "0.00"
+            # Chuyển sang dạng số thực (float)
+            float_numbers = [float(n) for n in numbers]
+            
+            # LỌC: Chỉ lấy số nào nhỏ hơn hoặc bằng 4.0 (Hệ 4)
+            gpa_4_list = [n for n in float_numbers if n <= 4.0]
+            
+            if gpa_4_list:
+                # Trả về số đầu tiên tìm thấy và ép định dạng 2 chữ số thập phân
+                return "{:.2f}".format(gpa_4_list[0])
                 
         return "0.00"
     except Exception:
         return "N/A"
 
 def check_semester_exists(soup, semester_name):
-    """Giữ nguyên logic xét học kỳ của bạn"""
+    """Giữ nguyên logic xét học kỳ"""
     return semester_name in soup.get_text()
