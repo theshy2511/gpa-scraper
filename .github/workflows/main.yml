@@ -1,0 +1,12 @@
+name: Auto Scrape GPA
+on:
+  workflow_dispatch: # Cái này để hiện nút bấm chạy tay
+  schedule:
+    - cron: '0 1 * * *'
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - name: Test
+        run: echo "Hello, workflow is working!"
