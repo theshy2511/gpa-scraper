@@ -1,12 +1,33 @@
 name: Auto Scrape GPA
+
 on:
-  workflow_dispatch: # Cái này để hiện nút bấm chạy tay
+  workflow_dispatch: 
   schedule:
     - cron: '0 1 * * *'
+
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - name: Test
-        run: echo "Hello, workflow is working!"
+      - name: Checkout code
+        uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
+      - name: Install dependencies
+        run: |
+          pip install selenium webdriver-manager openpyxl beautifulsoup4
+
+      - name: Run Scraper
+        run: python main.py  # Chạy script Python để điền điểm vào Excel
+
+      - name: Commit and Push changes
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add Data_14DH.xlsx
+          git commit -m "Auto updated GPA data $(date)" || echo "No changes to commit"
+          git push
