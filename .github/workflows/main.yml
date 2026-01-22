@@ -1,13 +1,16 @@
-name: Auto Scrape GPA
+name: Hourly GPA Scraper
 
 on:
-  workflow_dispatch: 
+  workflow_dispatch:
   schedule:
-    - cron: '0 1 * * *'
+    - cron: '0 * * * *' # Chạy vào phút thứ 0 của mỗi giờ
 
 jobs:
-  run-bot:
+  scrape:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
@@ -19,15 +22,15 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install selenium webdriver-manager openpyxl pandas beautifulsoup4
+          pip install selenium webdriver-manager openpyxl beautifulsoup4
 
       - name: Run Scraper
         run: python main.py
 
-      - name: Commit and Push changes
+      - name: Commit and Push
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add Data_14DH.xlsx
-          git commit -m "Auto updated GPA $(date)" || echo "No changes to commit"
+          git commit -m "Auto-update 100 rows $(date)" || echo "No changes"
           git push
