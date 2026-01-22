@@ -19,7 +19,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pip install selenium webdriver-manager openpyxl beautifulsoup4
+          pip install selenium webdriver-manager openpyxl pandas beautifulsoup4
 
       - name: Run Scraper
         run: python main.py
